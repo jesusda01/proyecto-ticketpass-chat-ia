@@ -1,0 +1,48 @@
+org: jesusdelgado
+app: web-chat-ia
+service: web-chat-ia-ticketpass
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  stage: dev
+  region: us-east-1
+
+plugins:
+  - serverless-s3-sync
+
+custom:
+  bucketName: ticketpass-web-chat-ia-${sls:stage}
+  s3Sync:
+    - bucketName: ${self:custom.bucketName}
+      localDir: dist
+
+resources:
+  Resources:
+    WebAppBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: BucketOwnerEnforced
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          IgnorePublicAcls: false
+          BlockPublicPolicy: false
+          RestrictPublicBuckets: false
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+
+    WebAppBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WebAppBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action: s3:GetObject
+              Resource: !Sub "${WebAppBucket.Arn}/*"

@@ -1,0 +1,17 @@
+# Node / Frontend
+node_modules/
+dist/
+.DS_Store
+
+# Python / Machine Learning
+__pycache__/
+*.pyc
+*.pkl
+
+# Serverless / AWS
+.serverless/
+.build/
+
+# Entornos virtuales
+venv/
+env/

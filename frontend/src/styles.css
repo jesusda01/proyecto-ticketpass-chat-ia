@@ -1,0 +1,241 @@
+:root {
+  color-scheme: light;
+  font-family: "Space Grotesk", sans-serif;
+  --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #0369a1 100%);
+  --panel: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --user-bubble: #0284c7;
+  --border: #cbd5e1;
+  --shadow: rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* Degradado de azul claro a azul más oscuro de izquierda a derecha */
+  background: linear-gradient(90deg, #e0f2fe 0%, #1e3a8a 100%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.sidebar {
+  padding: 32px 24px;
+  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  position: relative;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar h1 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar h1 span {
+  color: #0284c7;
+}
+
+.chat-list {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-item {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  box-shadow: 0 4px 12px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.chat-item.active,
+.chat-item:hover {
+  border-color: var(--accent);
+  background: #f0f9ff;
+  transform: translateY(-2px);
+}
+
+.chat-title {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.chat-date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty {
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  background: transparent;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1e3a8a;
+}
+
+.chat-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.chat-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+  overflow-y: auto;
+}
+
+.message {
+  display: flex;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: min(680px, 100%);
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px var(--shadow);
+  border: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+.message.user .bubble {
+  background: var(--user-bubble);
+  color: white;
+  border-color: transparent;
+}
+
+.chat-input {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-input input {
+  padding: 14px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  outline: none;
+  background: #ffffff;
+}
+
+.chat-input input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+button {
+  border: none;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.primary:hover {
+  background: var(--accent-hover);
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: #1e3a8a;
+}
+
+.error {
+  margin-top: 12px;
+  color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80%;
+    max-width: 320px;
+    transform: translateX(-110%);
+    transition: transform 0.3s ease;
+    z-index: 10;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .chat-area {
+    padding: 20px;
+  }
+}
