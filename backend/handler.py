@@ -128,7 +128,7 @@ def send_message(event, context):
                 json_str = answer[start_idx:end_idx]
                 datos_ticket = json.loads(json_str)
                 
-                # Llamar al API de predicción en la EC2
+                # Llamar al API de predicción/cotización en la EC2
                 resultado_ml = predecir_costo_ticket(
                     evento=datos_ticket.get("evento"),
                     zona=datos_ticket.get("zona"),
@@ -171,7 +171,7 @@ Todo está listo para proceder con la compra. Recibirás a continuación el comp
 {swagger_json_str}
 ```"""
         except Exception as e:
-            print(f"Error procesando predicción o JSON: {str(e)}")
+            print(f"Error procesando predicción/cotización o JSON: {str(e)}")
             pass
 
         timestamp = _now_iso()
