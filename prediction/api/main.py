@@ -10,10 +10,8 @@ a = joblib.load(R / 'models/modelo_clasificacion_soldout.joblib')
 # c: modelo de regresión (Venta de Entradas)
 c = joblib.load(R / 'models/modelo_regresion_entradas.joblib')
 
-app = FastAPI(
-    title='ticketpass_prediction_api',
-    version='1.0',
-)
+
+app = FastAPI(title="ticketpass_prediction_api")
 
 
 class ClasificacionSoldOut(BaseModel):

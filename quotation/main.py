@@ -3,17 +3,21 @@ import joblib
 import numpy as np
 import os
 
-app = FastAPI()
+
+app = FastAPI(title="ticketpass_quotation_api")
+
 
 # Cargar modelo al iniciar
 if not os.path.exists("ticket_model.pkl"):
     import model
     model.train_and_save_model()
 
+
 ml_model = joblib.load("ticket_model.pkl")
 
-@app.post("/predict")
-def predict_ticket(data: dict):
+
+@app.post("/quotation")
+def quotation_ticket(data: dict):
     # Mapeo de zonas a valores numéricos
     zona_map = {"General": 1, "Platea": 2, "VIP": 3, "Platinum": 4}
     zona_val = zona_map.get(data.get("zona"), 1)

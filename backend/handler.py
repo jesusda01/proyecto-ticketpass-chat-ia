@@ -120,39 +120,38 @@ def send_message(event, context):
         else:
             answer = str(completion)
 
-        # Interceptar si el bot devolvió el JSON completo con los datos del ticket
+        # Interceptar si el bot devolvió un bloque JSON para cotización o modelos de ML
         try:
-            if "{" in answer and "}" in answer and "evento" in answer and "zona" in answer and "cantidad" in answer:
+            if "{" in answer and "}" in answer:
                 start_idx = answer.find("{")
                 end_idx = answer.rfind("}") + 1
                 json_str = answer[start_idx:end_idx]
-                datos_ticket = json.loads(json_str)
+                datos_modelo = json.loads(json_str)
                 
-                # Llamar al API de predicción/cotización en la EC2
-                resultado_ml = predecir_costo_ticket(
-                    evento=datos_ticket.get("evento"),
-                    zona=datos_ticket.get("zona"),
-                    cantidad=datos_ticket.get("cantidad")
-                )
-                
-                if resultado_ml and "costo_estimado_pen" in resultado_ml:
-                    costo = resultado_ml["costo_estimado_pen"]
-                    evento_val = datos_ticket.get("evento")
-                    zona_val = datos_ticket.get("zona")
-                    cantidad_val = datos_ticket.get("cantidad")
-                    metodo_val = datos_ticket.get("metodo_pago", "Yape")
-                    dni_val = datos_ticket.get("documento_identidad", "12345678")
+                # CASO 1: Cotización tradicional (Puerto 8000)
+                if "evento" in datos_modelo and "zona" in datos_modelo and "cantidad" in datos_modelo:
+                    resultado_ml = predecir_costo_ticket(
+                        evento=datos_modelo.get("evento"),
+                        zona=datos_modelo.get("zona"),
+                        cantidad=datos_modelo.get("cantidad")
+                    )
+                    
+                    if resultado_ml and "costo_estimado_pen" in resultado_ml:
+                        costo = resultado_ml["costo_estimado_pen"]
+                        evento_val = datos_modelo.get("evento")
+                        zona_val = datos_modelo.get("zona")
+                        cantidad_val = datos_modelo.get("cantidad")
+                        metodo_val = datos_modelo.get("metodo_pago", "Yape")
+                        dni_val = datos_modelo.get("documento_identidad", "12345678")
 
-                    # Construimos un JSON limpio exclusivo para Swagger
-                    swagger_payload = {
-                        "evento": evento_val,
-                        "zona": zona_val,
-                        "cantidad": int(cantidad_val)
-                    }
-                    swagger_json_str = json.dumps(swagger_payload, indent=2, ensure_ascii=False)
+                        swagger_payload = {
+                            "evento": evento_val,
+                            "zona": zona_val,
+                            "cantidad": int(cantidad_val)
+                        }
+                        swagger_json_str = json.dumps(swagger_payload, indent=2, ensure_ascii=False)
 
-                    # Conservamos el mensaje amigable, agregamos el costo total y anexamos el bloque JSON legible
-                    answer = f"""¡Perfecto, ahora tenemos todos los datos!
+                        answer = f"""¡Perfecto, ahora tenemos todos los datos!
 
 📋 **Resumen de la reserva**
 - **Evento:** {evento_val}
@@ -170,6 +169,40 @@ Todo está listo para proceder con la compra. Recibirás a continuación el comp
 ```json
 {swagger_json_str}
 ```"""
+
+                # CASO 2: Regresión de Ventas (Puerto 8001 - /ventas)
+                elif "artista" in datos_modelo and "aforo_maximo" in datos_modelo:
+                    resultado_ventas = predecir_ventas_concierto(datos_modelo)
+                    if resultado_ventas and "entradas_estimadas_vendidas" in resultado_ventas:
+                        entradas = resultado_ventas["entradas_estimadas_vendidas"]
+                        moneda = resultado_ventas.get("moneda", "PEN")
+                        
+                        answer = f"""📊 **Predicción de Ventas Estimadas (Machine Learning)**
+
+- **Artista / Evento:** {datos_modelo.get('artista')}
+- **Recinto:** {datos_modelo.get('recinto', 'N/D')}
+- **Entradas estimadas a vender:** **{entradas} unidades** ({moneda})
+
+El modelo de regresión ha procesado las variables de aforo, oyentes y antelación para calcular esta proyección. 🚀
+"""
+
+                # CASO 3: Clasificación Sold Out (Puerto 8001 - /sold_out)
+                elif "artista" in datos_modelo and "oyentes_spotify_peru" in datos_modelo and "presupuesto_marketing_digital_usd" in datos_modelo:
+                    resultado_soldout = predecir_sold_out_concierto(datos_modelo)
+                    if resultado_soldout:
+                        es_sold_out = resultado_soldout.get("es_sold_out", False)
+                        probabilidad = resultado_soldout.get("probabilidad_exito", 0)
+                        estado_texto = "¡Sí! Habrá Sold Out 🔥" if es_sold_out else "No se proyecta Sold Out 📉"
+                        
+                        answer = f"""🔮 **Evaluación de Probabilidad de Sold Out (Machine Learning)**
+
+- **Artista:** {datos_modelo.get('artista')}
+- **¿Habrá Sold Out?:** **{estado_texto}**
+- **Probabilidad de éxito:** **{probabilidad}%**
+
+El modelo de clasificación ha analizado el impacto en marketing y streaming para este lanzamiento.
+"""
+
         except Exception as e:
             print(f"Error procesando predicción/cotización o JSON: {str(e)}")
             pass
@@ -192,7 +225,7 @@ Todo está listo para proceder con la compra. Recibirás a continuación el comp
                 "pk": f"CHAT#{chat_id}",
                 "sk": assistant_sk,
                 "role": "assistant",
-                "content": answer,  # Guardado con el precio y el bloque JSON incluido
+                "content": answer,
                 "createdAt": timestamp,
             }
         )
@@ -203,7 +236,7 @@ Todo está listo para proceder con la compra. Recibirás a continuación el comp
 
 
 def predecir_costo_ticket(evento: str, zona: str, cantidad: int) -> dict:
-    url = "http://34.237.12.83:8000/predict"
+    url = "http://34.237.12.83:8000/quotation"
     payload = {
         "evento": evento,
         "zona": zona,
@@ -221,5 +254,41 @@ def predecir_costo_ticket(evento: str, zona: str, cantidad: int) -> dict:
             if response.status == 200:
                 return json.loads(response.read().decode("utf-8"))
     except Exception as e:
-        print(f"Error conectando al API de ML: {str(e)}")
+        print(f"Error conectando al API de Cotización (8000): {str(e)}")
+    return {}
+
+
+def predecir_ventas_concierto(payload: dict) -> dict:
+    url = "http://34.237.12.83:8001/ventas"
+    try:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        req = Request(
+            url, 
+            data=data_bytes, 
+            headers={"Content-Type": "application/json"}, 
+            method="POST"
+        )
+        with urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Error conectando al API de Ventas (8001): {str(e)}")
+    return {}
+
+
+def predecir_sold_out_concierto(payload: dict) -> dict:
+    url = "http://34.237.12.83:8001/sold_out"
+    try:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        req = Request(
+            url, 
+            data=data_bytes, 
+            headers={"Content-Type": "application/json"}, 
+            method="POST"
+        )
+        with urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Error conectando al API de Sold Out (8001): {str(e)}")
     return {}
